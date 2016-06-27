@@ -52,23 +52,38 @@ type res struct {
 	status           string
 }
 
+type m struct {
+	next        string
+	method      string
+	total_count int
+	link        string
+	count       int
+	description string
+	lon         float64
+	title       string
+	url         string
+	id          string
+	updated     int
+	lat         float64
+}
+
+type rlt struct {
+	result []res
+	meta   m
+}
+
 func main() {
 	response, err := http.Get("https://api.meetup.com/2/events?offset=0&format=json&limited_events=False&group_urlname=WWCWichita&photo-host=public&page=20&fields=&order=time&status=upcoming&desc=false&sig_id=73273692&sig=4111c5adf6695f954bd7ae7dfd86896970b451f6")
 	if err != nil {
 		log.Fatal(err)
 	} else {
 		defer response.Body.Close()
-		var dat map[string]interface{}
-		var list []res
+		var dat rlt
 		body, _ := ioutil.ReadAll(response.Body)
 
 		if err := json.Unmarshal(body, &dat); err != nil {
 			panic(err)
 		}
-		for _, thing := range dat["results"] {
-			list = append(list, thing.(res))
-		}
-		list = dat["results"].([]res)
-		fmt.Println(list[0])
+		fmt.Println(dat.result[0])
 	}
 }
