@@ -12,4 +12,4 @@ A DevICT CLI written in Go.
 
 
 #TODO
-- Be able to create job posting.
+- See Github Issues
