@@ -100,7 +100,9 @@ func (slice Results) Swap(i, j int) {
 
 func PrintEvents() {
 	w := tablewriter.NewWriter(os.Stdout)
-	allRes := GetEvents()
+	allevents := make(chan Results)
+	go GetEvents(allevents)
+	allRes := <-allevents
 	sort.Sort(allRes)
 
 	for _, event := range allRes[:20] {
@@ -137,18 +139,23 @@ func PrintEvents() {
 	w.Render() // Renders table
 }
 
-func GetEvents() Results {
+func GetEvents(allevents chan Results) {
 	allRes := Results{}
 	list := []MeetupRes{}
 
-	wwcData := GetMeetupResults(wwcURL)
-	devictURL := GetMeetupResults(devictURL)
-	makeictURL := GetMeetupResults(makeictURL)
-	openwichitaURL := GetMeetupResults(openwichitaURL)
-	list = append(list, wwcData)
-	list = append(list, devictURL)
-	list = append(list, makeictURL)
-	list = append(list, openwichitaURL)
+	wwcChan := make(chan MeetupRes)
+	devictChan := make(chan MeetupRes)
+	makeictChan := make(chan MeetupRes)
+	openwichitaChan := make(chan MeetupRes)
+
+	go GetMeetupResults(wwcURL, wwcChan)
+	go GetMeetupResults(devictURL, devictChan)
+	go GetMeetupResults(makeictURL, makeictChan)
+	go GetMeetupResults(openwichitaURL, openwichitaChan)
+
+	list = append(list, <-devictChan)
+	list = append(list, <-makeictChan)
+	list = append(list, <-openwichitaChan)
 
 	for _, item := range list {
 		for _, res := range item.Results {
@@ -160,10 +167,10 @@ func GetEvents() Results {
 			})
 		}
 	}
-	return allRes
+	allevents <- allRes
 }
 
-func GetMeetupResults(URL string) MeetupRes {
+func GetMeetupResults(URL string, mres chan MeetupRes) {
 	var res MeetupRes
 	response, err := http.Get(URL)
 	if err != nil {
@@ -175,5 +182,5 @@ func GetMeetupResults(URL string) MeetupRes {
 			panic(err)
 		}
 	}
-	return res
+	mres <- res
 }
